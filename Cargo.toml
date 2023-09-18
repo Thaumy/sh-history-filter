@@ -2,5 +2,10 @@
 name = "sh-history-filter"
 version = "0.0.1"
 edition = "2021"
+description = "Shell history filter"
+license = "MIT"
+repository = "https://github.com/Thaumy/sh-history-filter"
+keywords = ["shell", "history", "filter"]
+categories = ["command-line-utilities"]
 
 [dependencies]

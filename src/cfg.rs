@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub ignore: Filter,
+    pub filter: Filter,
 }
 
 #[derive(Deserialize)]

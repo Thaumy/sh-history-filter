@@ -8,4 +8,9 @@ repository = "https://github.com/Thaumy/sh-history-filter"
 keywords = ["shell", "history", "filter"]
 categories = ["command-line-utilities"]
 
+[profile.release]
+lto = true
+strip = true
+codegen-units = 1
+
 [dependencies]

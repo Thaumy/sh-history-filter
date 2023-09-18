@@ -10,11 +10,17 @@ pub struct OrderedHashSet<T> {
 
 impl<T> Default for OrderedHashSet<T> {
     fn default() -> Self {
-        OrderedHashSet { i: 0, hash_map: HashMap::new() }
+        OrderedHashSet {
+            i: 0,
+            hash_map: HashMap::new(),
+        }
     }
 }
 
-impl<T> OrderedHashSet<T> where T: Eq + Hash {
+impl<T> OrderedHashSet<T>
+where
+    T: Eq + Hash,
+{
     pub fn new() -> Self {
         Self::default()
     }
@@ -36,9 +42,7 @@ impl<T> OrderedHashSet<T> where T: Eq + Hash {
         self.hash_map.into_iter().for_each(|(val, i)| {
             vec[i] = MaybeUninit::new(val);
         });
-        unsafe {
-            mem::transmute(vec)
-        }
+        unsafe { mem::transmute(vec) }
     }
 
     pub fn into_inner(self) -> HashMap<T, usize> {
@@ -49,12 +53,12 @@ impl<T> OrderedHashSet<T> where T: Eq + Hash {
 #[test]
 fn test() {
     let mut ohs = OrderedHashSet::new();
-    ohs.insert("a");// a
-    ohs.insert("b");// b
-    ohs.insert("c");// c
+    ohs.insert("a"); // a
+    ohs.insert("b"); // b
+    ohs.insert("c"); // c
     ohs.insert("a");
     ohs.insert("c");
-    ohs.insert("d");// d
+    ohs.insert("d"); // d
     let vec = ohs.into_vec();
     assert_eq!(vec, vec!["a", "b", "c", "d"]);
 }

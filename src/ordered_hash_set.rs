@@ -10,7 +10,7 @@ pub struct OrderedHashSet<T> {
 
 impl<T> Default for OrderedHashSet<T> {
     fn default() -> Self {
-        OrderedHashSet {
+        Self {
             i: 0,
             hash_map: HashMap::new(),
         }

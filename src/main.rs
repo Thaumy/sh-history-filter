@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::nursery, clippy::cargo_common_metadata)]
+
 use crate::args::{Args, ShellType};
 use crate::cfg::Config;
 use clap::Parser;

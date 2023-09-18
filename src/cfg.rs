@@ -25,7 +25,7 @@ regex = []
 "#;
 
 impl Config {
-    pub fn read() -> Result<Config> {
+    pub fn read() -> Result<Self> {
         let home_path = home_dir().ok_or_else(|| anyhow!("Can not get home dir"))?;
 
         let cfg_path = home_path.join("shf.toml");
@@ -37,7 +37,7 @@ impl Config {
 
         let cfg_path = fs::read_to_string(cfg_path)?;
 
-        let cfg: Config = toml::from_str(&cfg_path).unwrap();
+        let cfg: Self = toml::from_str(&cfg_path).unwrap();
 
         Ok(cfg)
     }

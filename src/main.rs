@@ -24,12 +24,14 @@ fn main() {
 
     let history = match shell_type {
         ShellType::Bash => {
-            let history = processor::bash::filter(&history_text, &regex_set);
+            let mut history = processor::bash::filter(&history_text, &regex_set);
             if cfg.filter.dedup {
-                processor::bash::dedup(&history)
-            } else {
-                history
+                history = processor::bash::dedup(&history)
             }
+            if cfg.filter.remove_empty_line {
+                history = processor::bash::remove_empty_line(&history)
+            }
+            history
         }
         ShellType::Fish => processor::fish::filter(&history_text, &regex_set),
     };

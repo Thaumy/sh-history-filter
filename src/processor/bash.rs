@@ -23,6 +23,10 @@ pub fn dedup(history: &str) -> String {
         .join("\n")
 }
 
+pub fn remove_empty_line(history: &str) -> String {
+    history.replace("\n\n", "\n")
+}
+
 #[test]
 fn test_filter() {
     let history = r#"echo hi
@@ -52,6 +56,21 @@ cd dnld
 echo hi
 echo bye"#;
     let left = dedup(history);
+
+    let right = r#"echo hi
+cd dnld
+echo bye"#;
+    assert_eq!(left, right)
+}
+
+#[test]
+fn test_remove_empty_line() {
+    let history = r#"echo hi
+
+cd dnld
+
+echo bye"#;
+    let left = remove_empty_line(history);
 
     let right = r#"echo hi
 cd dnld

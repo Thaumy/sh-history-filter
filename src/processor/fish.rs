@@ -40,7 +40,7 @@ fn test_filter() {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    let regex_set = vec![Regex::new(r"/nix/store/.+").unwrap()];
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
     let left = filter(history, &regex_set);
     println!("{}", left);
 

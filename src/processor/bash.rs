@@ -32,7 +32,7 @@ cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path
 echo bye"#;
-    let regex_set = vec![Regex::new(r"/nix/store/.+").unwrap()];
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
     let left = filter(history, &regex_set);
 
     let right = r#"echo hi

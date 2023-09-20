@@ -2,19 +2,22 @@
 
 use crate::args::{Args, ShellType};
 use crate::cfg::Config;
+use anyhow::Result;
 use clap::Parser;
 use regex::Regex;
+use std::fs;
+use std::path::Path;
 
 pub mod args;
 pub mod cfg;
 pub mod ordered_hash_set;
 pub mod processor;
 
-fn main() {
+fn main() -> Result<()> {
     let args: Args = Args::parse();
-    let history_text = args.history_text;
-    let shell_type = args.shell_type;
     let cfg = Config::read().unwrap();
+    let history_text = fs::read_to_string(Path::new(&args.history_path))?;
+    let shell_type = args.shell_type;
     let regex_set: Vec<_> = cfg
         .filter
         .regex
@@ -37,4 +40,6 @@ fn main() {
     };
 
     println!("{}", history);
+
+    Ok(())
 }

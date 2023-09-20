@@ -11,14 +11,14 @@ pub enum ShellType {
 pub struct Args {
     #[arg(verbatim_doc_comment)]
     /// History text to apply filter
-    ///   Example: sh-history-filter --shell-type bash --history-text 'echo hi'
+    ///   Example: sh-history-filter --shell-type bash --history-path '~/.bash_history'
     #[arg(long)]
-    #[arg(value_name = "TEXT")]
-    pub history_text: String,
+    #[arg(value_name = "PATH")]
+    pub history_path: String,
 
     #[arg(verbatim_doc_comment)]
     /// Type of the shell history
-    ///   Example: sh-history-filter --shell-type bash --history-text 'echo hi'
+    ///   Example: sh-history-filter --shell-type bash --history-text '~/.bash_history'
     ///     *
     #[arg(long)]
     #[arg(value_enum)]

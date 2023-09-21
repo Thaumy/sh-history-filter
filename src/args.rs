@@ -20,6 +20,15 @@ pub struct Args {
     pub shell: ShellType,
 
     #[arg(verbatim_doc_comment)]
+    /// Reverse filter predicate
+    ///   Example: sh-history-filter --shell-type bash --pred-rev --history-text '~/.bash_history'
+    ///     *
+    #[arg(long)]
+    #[arg(default_value_t = false)]
+    #[arg(value_name = "BOOL")]
+    pub pred_rev: bool,
+
+    #[arg(verbatim_doc_comment)]
     /// History text to apply filter
     ///   Example: sh-history-filter --shell-type bash --history-path '~/.bash_history'
     #[arg(long)]

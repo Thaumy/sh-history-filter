@@ -1,6 +1,6 @@
 use regex::Regex;
 use std::collections::HashSet;
-use std::ops::Not;
+use std::ops::BitXor;
 
 // WRN: fish_history file is not YAML, so we can not use serde
 // Related: https://github.com/fish-shell/fish-shell/issues/4675
@@ -60,13 +60,54 @@ fn deserialize(history: &str) -> Vec<Entry> {
     })
 }
 
-pub fn filter(history: &str, regex_set: &[Regex]) -> String {
+pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> String {
     let entry_vec: Vec<Entry> = deserialize(history);
     let entry_vec = entry_vec
         .into_iter()
-        .filter(|entry| regex_set.iter().any(|r| r.is_match(&entry.cmd)).not())
+        .filter(|entry| {
+            regex_set
+                .iter()
+                .any(|r| r.is_match(&entry.cmd))
+                .bitxor(pred_rev)
+        })
         .collect::<Vec<Entry>>();
     serialize(entry_vec)
+}
+
+#[test]
+fn test_filter_pred_rev() {
+    let history = r#"- cmd: ll
+  when: 1695003484
+- cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
+  when: 1695003501
+- cmd: cargo add toml@0.8.0
+  when: 1695003525
+- cmd: cd /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
+  when: 1678438675
+  paths:
+    - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
+- cmd: ln -s /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11 rs-stdlib
+  when: 1678438694
+  paths:
+    - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
+- cmd: vi .local/share/fish/fish_history
+  when: 1695044139
+  paths:
+    - .local/share/fish/fish_history"#;
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
+    let left = filter(history, &regex_set, true);
+
+    let right = r#"- cmd: ll
+  when: 1695003484
+- cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
+  when: 1695003501
+- cmd: cargo add toml@0.8.0
+  when: 1695003525
+- cmd: vi .local/share/fish/fish_history
+  when: 1695044139
+  paths:
+    - .local/share/fish/fish_history"#;
+    assert_eq!(left, right)
 }
 
 #[test]
@@ -90,18 +131,15 @@ fn test_filter() {
   paths:
     - .local/share/fish/fish_history"#;
     let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
-    let left = filter(history, &regex_set);
-    println!("{}", left);
+    let left = filter(history, &regex_set, false);
 
-    let right = r#"- cmd: ll
-  when: 1695003484
-- cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
-  when: 1695003501
-- cmd: cargo add toml@0.8.0
-  when: 1695003525
-- cmd: vi .local/share/fish/fish_history
-  when: 1695044139
+    let right = r#"- cmd: cd /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
+  when: 1678438675
   paths:
-    - .local/share/fish/fish_history"#;
+    - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
+- cmd: ln -s /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11 rs-stdlib
+  when: 1678438694
+  paths:
+    - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11"#;
     assert_eq!(left, right)
 }

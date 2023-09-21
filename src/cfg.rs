@@ -10,19 +10,17 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Config {
-    pub filter: Filter,
+    pub predicate: Predicate,
 }
 
 #[derive(Deserialize)]
-pub struct Filter {
-    pub dedup: bool,
-    pub remove_empty_line: bool,
+pub struct Predicate {
+    pub dup: bool,
     pub regex: HashSet<String>,
 }
 
-const DEFAULT_CFG: &str = r#"[filter]
-dedup = true
-remove_empty_line = true
+const DEFAULT_CFG: &str = r#"[predicate]
+dup = true
 regex = []
 "#;
 

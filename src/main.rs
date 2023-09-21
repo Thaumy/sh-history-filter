@@ -19,7 +19,7 @@ fn main() -> Result<()> {
     let history_text = fs::read_to_string(Path::new(&args.history_path))?;
     let shell_type = args.shell;
     let regex_set: Vec<_> = cfg
-        .filter
+        .predicate
         .regex
         .iter()
         .map(|r| Regex::new(r).unwrap())
@@ -27,13 +27,13 @@ fn main() -> Result<()> {
 
     let history = match shell_type {
         ShellType::Bash => {
-            let mut history = processor::bash::filter(&history_text, &regex_set);
-            if cfg.filter.dedup {
+            let mut history = processor::bash::filter(&history_text, &regex_set, args.pred_rev);
+            if cfg.predicate.dup {
                 history = processor::bash::dedup(&history)
             }
             history
         }
-        ShellType::Fish => processor::fish::filter(&history_text, &regex_set),
+        ShellType::Fish => processor::fish::filter(&history_text, &regex_set, args.pred_rev),
     };
 
     println!("{}", history);

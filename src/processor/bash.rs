@@ -23,20 +23,20 @@ pub fn dedup(history: &str) -> String {
         .join("\n")
 }
 
-pub fn remove_empty_line(history: &str) -> String {
-    history.replace("\n\n", "\n")
-}
-
 #[test]
 fn test_filter() {
     let history = r#"echo hi
 cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
+
 ll /nix/store/0c3rfn378viks3z095rf99c3hfpcr13q-libcdio-2.1.0/
 cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path
 echo bye"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
+    let regex_set = vec![
+        Regex::new(r"^.* /nix/store/.+").unwrap(),
+        Regex::new(r"^$").unwrap(),
+    ];
     let left = filter(history, &regex_set);
 
     let right = r#"echo hi
@@ -56,21 +56,6 @@ cd dnld
 echo hi
 echo bye"#;
     let left = dedup(history);
-
-    let right = r#"echo hi
-cd dnld
-echo bye"#;
-    assert_eq!(left, right)
-}
-
-#[test]
-fn test_remove_empty_line() {
-    let history = r#"echo hi
-
-cd dnld
-
-echo bye"#;
-    let left = remove_empty_line(history);
 
     let right = r#"echo hi
 cd dnld

@@ -31,9 +31,6 @@ fn main() -> Result<()> {
             if cfg.filter.dedup {
                 history = processor::bash::dedup(&history)
             }
-            if cfg.filter.remove_empty_line {
-                history = processor::bash::remove_empty_line(&history)
-            }
             history
         }
         ShellType::Fish => processor::fish::filter(&history_text, &regex_set),

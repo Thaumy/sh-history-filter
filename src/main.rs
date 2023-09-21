@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     let history = match shell_type {
         ShellType::Bash => {
             let mut history = processor::bash::filter(&history_text, &regex_set, args.pred_rev);
-            if cfg.predicate.dup {
+            if cfg.output.dedup {
                 history = processor::bash::dedup(&history)
             }
             history

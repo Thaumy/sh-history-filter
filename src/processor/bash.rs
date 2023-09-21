@@ -39,6 +39,7 @@ cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
 
 ll /nix/store/0c3rfn378viks3z095rf99c3hfpcr13q-libcdio-2.1.0/
 cd dnld
+cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path
 echo bye"#;
@@ -51,6 +52,7 @@ echo bye"#;
 
     let right = r#"echo hi
 cd dnld
+cd dnld
 cd /nix/store/
 echo bye"#;
     assert_eq!(left, right)
@@ -62,6 +64,7 @@ fn test_filter() {
 cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
 
 ll /nix/store/0c3rfn378viks3z095rf99c3hfpcr13q-libcdio-2.1.0/
+cd dnld
 cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path

@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     let args: Args = Args::parse();
     let cfg = Config::read().unwrap();
     let history_text = fs::read_to_string(Path::new(&args.history_path))?;
-    let shell_type = args.shell_type;
+    let shell_type = args.shell;
     let regex_set: Vec<_> = cfg
         .filter
         .regex

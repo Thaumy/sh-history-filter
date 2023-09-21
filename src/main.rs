@@ -36,7 +36,7 @@ fn main() -> Result<()> {
         ShellType::Fish => processor::fish::filter(&history_text, &regex_set, args.pred_rev),
     };
 
-    println!("{}", history);
+    print!("{}", history);
 
     Ok(())
 }

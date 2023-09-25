@@ -1,6 +1,10 @@
+use crate::infra::option::IntoOption;
+use crate::infra::result::IntoResult;
 use regex::Regex;
 use std::collections::HashSet;
+use std::fmt::Write;
 use std::ops::BitXor;
+use thiserror::Error;
 
 // WRN: fish_history file is not YAML, so we can not use serde
 // Related: https://github.com/fish-shell/fish-shell/issues/4675
@@ -10,58 +14,96 @@ struct Entry {
     pub paths: Option<HashSet<String>>,
 }
 
-fn serialize(entry_vec: Vec<Entry>) -> String {
-    entry_vec
+type FmtErr = std::fmt::Error;
+
+fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
+    let blocks = entry_vec
         .into_iter()
-        .map(|entry| {
-            let mut string = String::new();
-            string.push_str(&format!("- cmd: {}\n", entry.cmd));
-            string.push_str(&format!("  when: {}", entry.when));
-            if let Some(paths) = entry.paths {
-                string.push_str("\n  paths:");
-                paths.into_iter().for_each(|path| {
-                    string.push_str(&format!("\n    - {}", path));
-                });
+        .map(|entry| try {
+            let mut buf = String::new();
+            {
+                let buf = &mut buf;
+                writeln!(buf, "- cmd: {}", entry.cmd)?;
+                write!(buf, "  when: {}", entry.when)?;
+                if let Some(paths) = entry.paths {
+                    write!(buf, "\n  paths:")?;
+                    for path in paths {
+                        write!(buf, "\n    - {}", path)?;
+                    }
+                }
             }
-            string
+            buf
         })
-        .collect::<Vec<_>>()
-        .join("\n")
+        .collect::<Result<Vec<String>, FmtErr>>()?;
+
+    blocks.join("\n").into_ok()
 }
-fn deserialize(history: &str) -> Vec<Entry> {
-    history.lines().fold(vec![], |mut acc, line| match true {
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("the line `{0}` is invalid, caused by:\n {1}")]
+    BadLine(String, String),
+    #[error("the context was broken when parsing line `{0}`, something may be missing")]
+    BadCtx(String),
+    #[error("failed to serialize, caused by:\n {0}")]
+    BadFmt(FmtErr),
+}
+
+fn deserialize(history: &str) -> Result<Vec<Entry>, Error> {
+    let mut lines = history.lines();
+
+    lines.try_fold(vec![], |mut acc, line| match true {
         _ if line.starts_with("- cmd: ") => {
             acc.push(Entry {
                 cmd: line[7..].to_owned(),
                 when: 0,
                 paths: None,
             });
-            acc
+            acc.into_ok()
         }
         _ if line.starts_with("  when: ") => {
-            acc.last_mut().unwrap().when = str::parse::<usize>(&line[8..])
-                .unwrap_or_else(|e| panic!("parse `when` to usize failed: {}", e));
-            acc
+            let last_block = acc
+                .last_mut()
+                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+            let when = {
+                let when_str = &line[8..];
+                str::parse::<usize>(when_str).map_err(|e| {
+                    Error::BadLine(
+                        line.to_owned(),
+                        format!(
+                            "failed to parse {}, caused by:\n {}",
+                            when_str.to_owned(),
+                            e
+                        ),
+                    )
+                })?
+            };
+            last_block.when = when;
+            acc.into_ok()
         }
         _ if line.starts_with("  paths:") => {
-            acc.last_mut().unwrap().paths = Some(HashSet::new());
-            acc
+            let last_block = acc
+                .last_mut()
+                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+            last_block.paths = HashSet::new().into_some();
+            acc.into_ok()
         }
         _ if line.starts_with("    - ") => {
-            acc.last_mut()
-                .unwrap()
+            let last_block = acc
+                .last_mut()
+                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+            last_block
                 .paths
                 .as_mut()
-                .expect("`path` is None, unable to insert")
+                .ok_or_else(|| Error::BadCtx(line.to_owned()))?
                 .insert(line[6..].to_owned());
-            acc
+            acc.into_ok()
         }
-        _ => panic!("Invalid line format: {}", line),
+        _ => Error::BadLine(line.to_owned(), line.to_owned()).into_err(),
     })
 }
-
-pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> String {
-    let entry_vec: Vec<Entry> = deserialize(history);
+pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<String, Error> {
+    let entry_vec: Vec<Entry> = deserialize(history)?;
     let entry_vec = entry_vec
         .into_iter()
         .filter(|entry| {
@@ -71,11 +113,11 @@ pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> String {
                 .bitxor(pred_rev)
         })
         .collect::<Vec<Entry>>();
-    serialize(entry_vec)
+    serialize(entry_vec).map_err(Error::BadFmt)
 }
 
 #[test]
-fn test_filter_pred_rev() {
+fn test_filter_pred_rev() -> anyhow::Result<()> {
     let history = r#"- cmd: ll
   when: 1695003484
 - cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
@@ -94,8 +136,8 @@ fn test_filter_pred_rev() {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
-    let left = filter(history, &regex_set, true);
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?];
+    let left = filter(history, &regex_set, true)?;
 
     let right = r#"- cmd: ll
   when: 1695003484
@@ -107,11 +149,13 @@ fn test_filter_pred_rev() {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    assert_eq!(left, right)
+    assert_eq!(left, right);
+
+    ().into_ok()
 }
 
 #[test]
-fn test_filter() {
+fn test_filter() -> anyhow::Result<()> {
     let history = r#"- cmd: ll
   when: 1695003484
 - cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
@@ -130,8 +174,8 @@ fn test_filter() {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
-    let left = filter(history, &regex_set, false);
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?];
+    let left = filter(history, &regex_set, false)?;
 
     let right = r#"- cmd: cd /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
   when: 1678438675
@@ -141,5 +185,7 @@ fn test_filter() {
   when: 1678438694
   paths:
     - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11"#;
-    assert_eq!(left, right)
+    assert_eq!(left, right);
+
+    ().into_ok()
 }

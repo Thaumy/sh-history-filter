@@ -24,14 +24,16 @@ fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
             {
                 let buf = &mut buf;
                 writeln!(buf, "- cmd: {}", entry.cmd)?;
-                write!(buf, "  when: {}", entry.when)?;
+                writeln!(buf, "  when: {}", entry.when)?;
                 if let Some(paths) = entry.paths {
-                    write!(buf, "\n  paths:")?;
+                    writeln!(buf, "  paths:")?;
                     for path in paths {
-                        write!(buf, "\n    - {}", path)?;
+                        writeln!(buf, "    - {}", path)?;
                     }
                 }
             }
+            // remove '\n' postfix
+            buf.pop();
             buf
         })
         .collect::<Result<Vec<String>, FmtErr>>()?;

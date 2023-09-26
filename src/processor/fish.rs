@@ -1,5 +1,6 @@
 use crate::infra::option::IntoOption;
 use crate::infra::result::IntoResult;
+use crate::infra::vec::VecExt;
 use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Write;
@@ -8,6 +9,7 @@ use thiserror::Error;
 
 // WRN: fish_history file is not YAML, so we can not use serde
 // Related: https://github.com/fish-shell/fish-shell/issues/4675
+#[derive(Debug)]
 struct Entry {
     pub cmd: String,
     pub when: usize,
@@ -17,31 +19,29 @@ struct Entry {
 type FmtErr = std::fmt::Error;
 
 fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
-    let blocks = entry_vec
-        .into_iter()
-        .map(|entry| try {
-            let mut buf = String::new();
+    let mut serialized = entry_vec.into_iter().try_fold::<_, _, Result<_, _>>(
+        String::new(),
+        |mut acc, entry| try {
             {
-                let buf = &mut buf;
-                writeln!(buf, "- cmd: {}", entry.cmd)?;
-                writeln!(buf, "  when: {}", entry.when)?;
+                let acc = &mut acc;
+                writeln!(acc, "- cmd: {}", entry.cmd)?;
+                writeln!(acc, "  when: {}", entry.when)?;
                 if let Some(paths) = entry.paths {
-                    writeln!(buf, "  paths:")?;
-                    for path in paths {
-                        writeln!(buf, "    - {}", path)?;
-                    }
+                    let paths = paths.into_iter().try_fold(String::new(), |mut acc, path| {
+                        writeln!(&mut acc, "    - {}", path).map(|_| acc)
+                    })?;
+                    write!(acc, "  paths:\n{}", paths)?;
                 }
             }
-            // remove '\n' postfix
-            buf.pop();
-            buf
-        })
-        .collect::<Result<Vec<String>, FmtErr>>()?;
-
-    blocks.join("\n").into_ok()
+            acc
+        },
+    )?;
+    // remove following '\n'
+    serialized.pop();
+    serialized.into_ok()
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum Error {
     #[error("the line `{0}` is invalid, caused by:\n {1}")]
     BadLine(String, String),
@@ -52,58 +52,62 @@ pub enum Error {
 }
 
 fn deserialize(history: &str) -> Result<Vec<Entry>, Error> {
-    let mut lines = history.lines();
-
-    lines.try_fold(vec![], |mut acc, line| match true {
-        _ if line.starts_with("- cmd: ") => {
-            acc.push(Entry {
-                cmd: line[7..].to_owned(),
-                when: 0,
-                paths: None,
-            });
-            acc.into_ok()
-        }
-        _ if line.starts_with("  when: ") => {
-            let last_block = acc
-                .last_mut()
-                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
-            let when = {
-                let when_str = &line[8..];
-                str::parse::<usize>(when_str).map_err(|e| {
-                    Error::BadLine(
-                        line.to_owned(),
-                        format!(
-                            "failed to parse {}, caused by:\n {}",
-                            when_str.to_owned(),
-                            e
-                        ),
-                    )
-                })?
-            };
-            last_block.when = when;
-            acc.into_ok()
-        }
-        _ if line.starts_with("  paths:") => {
-            let last_block = acc
-                .last_mut()
-                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
-            last_block.paths = HashSet::new().into_some();
-            acc.into_ok()
-        }
-        _ if line.starts_with("    - ") => {
-            let last_block = acc
-                .last_mut()
-                .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
-            last_block
-                .paths
-                .as_mut()
-                .ok_or_else(|| Error::BadCtx(line.to_owned()))?
-                .insert(line[6..].to_owned());
-            acc.into_ok()
-        }
-        _ => Error::BadLine(line.to_owned(), line.to_owned()).into_err(),
-    })
+    let prefix_cmd = "- cmd: ";
+    let prefix_when = "  when: ";
+    let prefix_paths = "  paths:";
+    let prefix_paths_item = "    - ";
+    history
+        .lines()
+        .try_fold(vec![], |mut acc, line| match true {
+            _ if line.starts_with(prefix_cmd) => acc
+                .chain_push(Entry {
+                    cmd: line[prefix_cmd.len()..].to_owned(),
+                    when: 0,
+                    paths: None,
+                })
+                .into_ok(),
+            _ if line.starts_with(prefix_when) => {
+                let last_block = acc
+                    .last_mut()
+                    .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+                let when = {
+                    let when_str = &line[prefix_when.len()..];
+                    str::parse::<usize>(when_str).map_err(|e| {
+                        Error::BadLine(
+                            line.to_owned(),
+                            format!(
+                                "failed to parse {}, caused by:\n {}",
+                                when_str.to_owned(),
+                                e
+                            ),
+                        )
+                    })?
+                };
+                last_block.when = when;
+                acc.into_ok()
+            }
+            _ if line.starts_with(prefix_paths) => {
+                let last_block = acc
+                    .last_mut()
+                    .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+                last_block.paths = HashSet::new().into_some();
+                acc.into_ok()
+            }
+            _ if line.starts_with(prefix_paths_item) => {
+                let last_block = acc
+                    .last_mut()
+                    .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
+                last_block
+                    .paths
+                    .as_mut()
+                    .ok_or_else(|| Error::BadCtx(line.to_owned()))?
+                    .insert(line[prefix_paths_item.len()..].to_owned());
+                acc.into_ok()
+            }
+            _ => Error::BadLine(line.to_owned(), line.to_owned()).into_err(),
+        })
 }
+
 pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<String, Error> {
     let entry_vec: Vec<Entry> = deserialize(history)?;
     let entry_vec = entry_vec

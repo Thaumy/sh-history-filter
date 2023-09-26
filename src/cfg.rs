@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::ops::Not;
 
+use crate::infra::result::IntoResult;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -46,6 +47,6 @@ impl Config {
 
         let cfg: Self = toml::from_str(&cfg_path).unwrap();
 
-        Ok(cfg)
+        cfg.into_ok()
     }
 }

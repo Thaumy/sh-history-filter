@@ -14,7 +14,7 @@ use std::path::Path;
 pub mod args;
 pub mod cfg;
 pub mod infra;
-pub mod ordered_hash_set;
+pub mod ordered_set;
 pub mod processor;
 
 fn main() -> Result<()> {

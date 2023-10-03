@@ -1,58 +1,57 @@
-use std::collections::HashMap;
-use std::hash::Hash;
+use std::collections::BTreeMap;
 use std::mem;
 use std::mem::MaybeUninit;
 
-pub struct OrderedHashSet<T> {
+pub struct OrderedBTreeSet<T> {
     i: usize,
-    hash_map: HashMap<T, usize>,
+    map: BTreeMap<T, usize>,
 }
 
-impl<T> Default for OrderedHashSet<T> {
+impl<T> Default for OrderedBTreeSet<T> {
     fn default() -> Self {
         Self {
             i: 0,
-            hash_map: HashMap::new(),
+            map: BTreeMap::new(),
         }
     }
 }
 
-impl<T> OrderedHashSet<T>
+impl<T> OrderedBTreeSet<T>
 where
-    T: Eq + Hash,
+    T: Ord,
 {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn insert(&mut self, val: T) {
-        if self.hash_map.contains_key(&val) {
+        if self.map.contains_key(&val) {
             return;
         }
-        self.hash_map.insert(val, self.i);
+        self.map.insert(val, self.i);
         self.i += 1;
     }
 
     pub fn into_vec(self) -> Vec<T> {
-        let len = self.hash_map.len();
+        let len = self.map.len();
         let mut vec = Vec::with_capacity(len);
         unsafe {
             vec.set_len(len);
         }
-        self.hash_map.into_iter().for_each(|(val, i)| {
+        self.map.into_iter().for_each(|(val, i)| {
             vec[i] = MaybeUninit::new(val);
         });
         unsafe { mem::transmute(vec) }
     }
 
-    pub fn into_inner(self) -> HashMap<T, usize> {
-        self.hash_map
+    pub fn into_inner(self) -> BTreeMap<T, usize> {
+        self.map
     }
 }
 
 #[test]
 fn test() {
-    let mut ohs = OrderedHashSet::new();
+    let mut ohs = OrderedBTreeSet::new();
     ohs.insert("a"); // a
     ohs.insert("b"); // b
     ohs.insert("c"); // c

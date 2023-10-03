@@ -1,5 +1,5 @@
 use crate::infra::result::IntoResult;
-use crate::ordered_hash_set::OrderedHashSet;
+use crate::ordered_set::OrderedBTreeSet;
 use regex::Regex;
 use std::ops::BitXor;
 
@@ -24,7 +24,7 @@ pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<Stri
 pub fn dedup(history: &str) -> Result<String, !> {
     let ohs = history
         .split('\n')
-        .fold(OrderedHashSet::new(), |mut acc, entry| {
+        .fold(OrderedBTreeSet::new(), |mut acc, entry| {
             acc.insert(entry);
             acc
         });

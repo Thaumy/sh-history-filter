@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use home::home_dir;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -22,7 +22,7 @@ pub struct Output {
 
 #[derive(Deserialize)]
 pub struct Predicate {
-    pub regex: HashSet<String>,
+    pub regex: BTreeSet<String>,
 }
 
 const DEFAULT_CFG: &str = r#"[output]

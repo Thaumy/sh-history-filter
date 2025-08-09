@@ -123,7 +123,7 @@ pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<Stri
 }
 
 #[test]
-fn test_filter_pred_rev() -> anyhow::Result<()> {
+fn test_filter_pred_rev() {
     let history = r#"- cmd: ll
   when: 1695003484
 - cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
@@ -142,8 +142,8 @@ fn test_filter_pred_rev() -> anyhow::Result<()> {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?];
-    let left = filter(history, &regex_set, true)?;
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
+    let left = filter(history, &regex_set, true).unwrap();
 
     let right = r#"- cmd: ll
   when: 1695003484
@@ -156,12 +156,10 @@ fn test_filter_pred_rev() -> anyhow::Result<()> {
   paths:
     - .local/share/fish/fish_history"#;
     assert_eq!(left, right);
-
-    ().into_ok()
 }
 
 #[test]
-fn test_filter() -> anyhow::Result<()> {
+fn test_filter() {
     let history = r#"- cmd: ll
   when: 1695003484
 - cmd: sudo netstat -anp | awk '$5 == "LISTEN" || $5 == "CONNECTED" {count[$5]++} END {printf "Listen: %d, Conn: $d", count["LISTEN"], count["CONNECTED"]}'
@@ -180,8 +178,8 @@ fn test_filter() -> anyhow::Result<()> {
   when: 1695044139
   paths:
     - .local/share/fish/fish_history"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?];
-    let left = filter(history, &regex_set, false)?;
+    let regex_set = vec![Regex::new(r"^.* /nix/store/.+").unwrap()];
+    let left = filter(history, &regex_set, false).unwrap();
 
     let right = r#"- cmd: cd /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11
   when: 1678438675
@@ -192,6 +190,4 @@ fn test_filter() -> anyhow::Result<()> {
   paths:
     - /nix/store/qjgdk4ahcg25v4fg91z3zb237gaw16dr-rust-default-1.68.0-nightly-2023-01-11"#;
     assert_eq!(left, right);
-
-    ().into_ok()
 }

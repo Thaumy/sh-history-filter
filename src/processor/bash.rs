@@ -33,7 +33,7 @@ pub fn dedup(history: &str) -> Result<String, !> {
 }
 
 #[test]
-fn test_filter_pred_rev() -> anyhow::Result<()> {
+fn test_filter_pred_rev() {
     let history = r#"echo hi
 cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
 
@@ -43,8 +43,11 @@ cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path
 echo bye"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?, Regex::new(r"^$")?];
-    let left = filter(history, &regex_set, true)?;
+    let regex_set = vec![
+        Regex::new(r"^.* /nix/store/.+").unwrap(),
+        Regex::new(r"^$").unwrap(),
+    ];
+    let left = filter(history, &regex_set, true).unwrap();
     println!("{}", left);
 
     let right = r#"echo hi
@@ -53,12 +56,10 @@ cd dnld
 cd /nix/store/
 echo bye"#;
     assert_eq!(left, right);
-
-    ().into_ok()
 }
 
 #[test]
-fn test_filter() -> anyhow::Result<()> {
+fn test_filter() {
     let history = r#"echo hi
 cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
 
@@ -68,8 +69,11 @@ cd dnld
 cd /nix/store/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path
 echo bye"#;
-    let regex_set = vec![Regex::new(r"^.* /nix/store/.+")?, Regex::new(r"^$")?];
-    let left = filter(history, &regex_set, false)?;
+    let regex_set = vec![
+        Regex::new(r"^.* /nix/store/.+").unwrap(),
+        Regex::new(r"^$").unwrap(),
+    ];
+    let left = filter(history, &regex_set, false).unwrap();
     println!("{}", left);
 
     let right = r#"cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
@@ -77,12 +81,10 @@ echo bye"#;
 ll /nix/store/0c3rfn378viks3z095rf99c3hfpcr13q-libcdio-2.1.0/
 nix profile remove /nix/store/bx6ayk3gb2yivjwdqzssh69v13706p31-home-manager-path"#;
     assert_eq!(left, right);
-
-    ().into_ok()
 }
 
 #[test]
-fn test_dedup() -> anyhow::Result<()> {
+fn test_dedup() {
     let history = r#"echo hi
 cd dnld
 echo hi
@@ -90,12 +92,10 @@ echo bye
 cd dnld
 echo hi
 echo bye"#;
-    let left = dedup(history)?;
+    let left = dedup(history).unwrap();
 
     let right = r#"echo hi
 cd dnld
 echo bye"#;
     assert_eq!(left, right);
-
-    ().into_ok()
 }

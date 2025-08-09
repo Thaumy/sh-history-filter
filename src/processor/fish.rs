@@ -36,7 +36,7 @@ fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
             acc
         },
     )?;
-    // remove following '\n'
+    // remove the trailing '\n'
     serialized.pop();
     serialized.into_ok()
 }

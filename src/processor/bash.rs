@@ -1,4 +1,3 @@
-use crate::infra::result::IntoResult;
 use crate::ordered_set::OrderedBTreeSet;
 use regex::Regex;
 use std::ops::BitXor;
@@ -18,7 +17,7 @@ pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<Stri
         .filter(|entry| regex_set.iter().any(|r| r.is_match(entry)).bitxor(pred_rev))
         .collect::<Vec<&str>>();
 
-    lines.join("\n").into_ok()
+    Ok(lines.join("\n"))
 }
 
 pub fn dedup(history: &str) -> Result<String, !> {
@@ -29,7 +28,7 @@ pub fn dedup(history: &str) -> Result<String, !> {
             acc
         });
 
-    ohs.into_vec().join("\n").into_ok()
+    Ok(ohs.into_vec().join("\n"))
 }
 
 #[test]

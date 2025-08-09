@@ -4,7 +4,6 @@
 
 use crate::args::{Args, ShellType};
 use crate::cfg::Config;
-use crate::infra::result::IntoResult;
 use anyhow::Result;
 use clap::Parser;
 use regex::Regex;
@@ -13,7 +12,6 @@ use std::path::Path;
 
 pub mod args;
 pub mod cfg;
-pub mod infra;
 pub mod ordered_set;
 pub mod processor;
 
@@ -42,5 +40,5 @@ fn main() -> Result<()> {
 
     println!("{}", history);
 
-    ().into_ok()
+    Ok(())
 }

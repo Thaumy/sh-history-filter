@@ -1,6 +1,3 @@
-use crate::infra::option::IntoOption;
-use crate::infra::result::IntoResult;
-use crate::infra::vec::VecExt;
 use regex::Regex;
 use std::collections::HashSet;
 use std::fmt::Write;
@@ -38,7 +35,7 @@ fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
     )?;
     // remove the trailing '\n'
     serialized.pop();
-    serialized.into_ok()
+    Ok(serialized)
 }
 
 #[derive(Error, Debug, Clone)]
@@ -59,13 +56,15 @@ fn deserialize(history: &str) -> Result<Vec<Entry>, Error> {
     history
         .lines()
         .try_fold(vec![], |mut acc, line| match true {
-            _ if line.starts_with(prefix_cmd) => acc
-                .chain_push(Entry {
+            _ if line.starts_with(prefix_cmd) => {
+                let entry = Entry {
                     cmd: line[prefix_cmd.len()..].to_owned(),
                     when: 0,
                     paths: None,
-                })
-                .into_ok(),
+                };
+                acc.push(entry);
+                Ok(acc)
+            }
             _ if line.starts_with(prefix_when) => {
                 let last_block = acc
                     .last_mut()
@@ -84,14 +83,14 @@ fn deserialize(history: &str) -> Result<Vec<Entry>, Error> {
                     })?
                 };
                 last_block.when = when;
-                acc.into_ok()
+                Ok(acc)
             }
             _ if line.starts_with(prefix_paths) => {
                 let last_block = acc
                     .last_mut()
                     .ok_or_else(|| Error::BadCtx(line.to_owned()))?;
-                last_block.paths = HashSet::new().into_some();
-                acc.into_ok()
+                last_block.paths = Some(HashSet::new());
+                Ok(acc)
             }
             _ if line.starts_with(prefix_paths_item) => {
                 let last_block = acc
@@ -102,9 +101,9 @@ fn deserialize(history: &str) -> Result<Vec<Entry>, Error> {
                     .as_mut()
                     .ok_or_else(|| Error::BadCtx(line.to_owned()))?
                     .insert(line[prefix_paths_item.len()..].to_owned());
-                acc.into_ok()
+                Ok(acc)
             }
-            _ => Error::BadLine(line.to_owned(), line.to_owned()).into_err(),
+            _ => Err(Error::BadLine(line.to_owned(), line.to_owned())),
         })
 }
 

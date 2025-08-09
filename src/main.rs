@@ -1,5 +1,3 @@
-#![feature(never_type)]
-#![feature(try_blocks)]
 #![warn(clippy::all, clippy::nursery, clippy::cargo_common_metadata)]
 
 use crate::args::{Args, ShellType};
@@ -29,9 +27,9 @@ fn main() -> Result<()> {
 
     let history = match shell_type {
         ShellType::Bash => {
-            let mut history = processor::bash::filter(&history_text, &regex_set, args.pred_rev)?;
+            let mut history = processor::bash::filter(&history_text, &regex_set, args.pred_rev);
             if cfg.output.dedup {
-                history = processor::bash::dedup(&history)?
+                history = processor::bash::dedup(&history);
             }
             history
         }

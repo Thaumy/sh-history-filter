@@ -11,16 +11,16 @@ use std::ops::BitXor;
 | 0              | 1        | 1    |
 => regex_is_match ⊕ pred_rev = keep
 **/
-pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> Result<String, !> {
+pub fn filter(history: &str, regex_set: &[Regex], pred_rev: bool) -> String {
     let lines = history
         .split('\n')
         .filter(|entry| regex_set.iter().any(|r| r.is_match(entry)).bitxor(pred_rev))
         .collect::<Vec<&str>>();
 
-    Ok(lines.join("\n"))
+    lines.join("\n")
 }
 
-pub fn dedup(history: &str) -> Result<String, !> {
+pub fn dedup(history: &str) -> String {
     let ohs = history
         .split('\n')
         .fold(OrderedBTreeSet::new(), |mut acc, entry| {
@@ -28,7 +28,7 @@ pub fn dedup(history: &str) -> Result<String, !> {
             acc
         });
 
-    Ok(ohs.into_vec().join("\n"))
+    ohs.into_vec().join("\n")
 }
 
 #[test]
@@ -46,7 +46,7 @@ echo bye"#;
         Regex::new(r"^.* /nix/store/.+").unwrap(),
         Regex::new(r"^$").unwrap(),
     ];
-    let left = filter(history, &regex_set, true).unwrap();
+    let left = filter(history, &regex_set, true);
     println!("{}", left);
 
     let right = r#"echo hi
@@ -72,7 +72,7 @@ echo bye"#;
         Regex::new(r"^.* /nix/store/.+").unwrap(),
         Regex::new(r"^$").unwrap(),
     ];
-    let left = filter(history, &regex_set, false).unwrap();
+    let left = filter(history, &regex_set, false);
     println!("{}", left);
 
     let right = r#"cd /nix/store/9xw1h0zihwx88jmkvaki1pzfxw0rdhvw-nixos/nixos/pkgs/servers/http/
@@ -91,7 +91,7 @@ echo bye
 cd dnld
 echo hi
 echo bye"#;
-    let left = dedup(history).unwrap();
+    let left = dedup(history);
 
     let right = r#"echo hi
 cd dnld

@@ -16,23 +16,17 @@ struct Entry {
 type FmtErr = std::fmt::Error;
 
 fn serialize(entry_vec: Vec<Entry>) -> Result<String, FmtErr> {
-    let mut serialized = entry_vec.into_iter().try_fold::<_, _, Result<_, _>>(
-        String::new(),
-        |mut acc, entry| try {
-            {
-                let acc = &mut acc;
-                writeln!(acc, "- cmd: {}", entry.cmd)?;
-                writeln!(acc, "  when: {}", entry.when)?;
-                if let Some(paths) = entry.paths {
-                    let paths = paths.into_iter().try_fold(String::new(), |mut acc, path| {
-                        writeln!(&mut acc, "    - {}", path).map(|_| acc)
-                    })?;
-                    write!(acc, "  paths:\n{}", paths)?;
-                }
-            }
-            acc
-        },
-    )?;
+    let mut serialized = String::new();
+    for entry in entry_vec {
+        writeln!(serialized, "- cmd: {}", entry.cmd)?;
+        writeln!(serialized, "  when: {}", entry.when)?;
+        if let Some(paths) = entry.paths {
+            let paths = paths.into_iter().try_fold(String::new(), |mut acc, path| {
+                writeln!(&mut acc, "    - {}", path).map(|_| acc)
+            })?;
+            write!(serialized, "  paths:\n{}", paths)?;
+        }
+    }
     // remove the trailing '\n'
     serialized.pop();
     Ok(serialized)
